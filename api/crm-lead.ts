@@ -40,6 +40,9 @@ export default async function handler(req: any, res: any): Promise<void> {
     const membersUrl = process.env.MEMBERS_AREA_URL;
     const membersKey = process.env.MEMBERS_AREA_API_KEY;
 
+    const crmProjectRef = crmUrl?.match(/https:\/\/([^.]+)\./)?.[1] ?? 'unknown';
+    console.log('[CRM_PROJECT]', crmProjectRef);
+
     const crmPromise = withTimeout(
       fetch(`${crmUrl}/rest/v1/lancamento_leads`, {
         method: 'POST',
@@ -95,6 +98,8 @@ export default async function handler(req: any, res: any): Promise<void> {
     const campanhasPM = '1a46c73e-a2dd-4de4-8f8f-655aa490e189';
     const campanhasIG = '878c4bda-9098-47e9-9686-54d85e836864';
     const disparoCampanhaId = Date.now() % 2 === 0 ? campanhasPM : campanhasIG;
+    // ordem em segundos (não milissegundos) para caber em integer do PostgreSQL
+    const ordemSegundos = Math.floor(Date.now() / 1000);
 
     const disparoPromise = withTimeout(
       fetch(`${crmUrl}/rest/v1/disparo_leads`, {
@@ -105,7 +110,7 @@ export default async function handler(req: any, res: any): Promise<void> {
           'Content-Type': 'application/json',
           Prefer: 'return=minimal',
         },
-        body: JSON.stringify({ campanha_id: disparoCampanhaId, nome, phone: phoneClean, status: 'pendente', ordem: Date.now() }),
+        body: JSON.stringify({ campanha_id: disparoCampanhaId, nome, phone: phoneClean, status: 'pendente', ordem: ordemSegundos }),
       }),
       3000,
       'disparo'
@@ -125,24 +130,36 @@ export default async function handler(req: any, res: any): Promise<void> {
     const [crmResult, userResult, gasResult, disparoResult, boasVindasResult] =
       await Promise.allSettled([crmPromise, userPromise, gasPromise, disparoPromise, boasVindasPromise]);
 
-    // Log de status
+    // Log de status detalhado
     console.log('[CRM]', crmResult.status, crmResult.status === 'rejected' ? (crmResult as PromiseRejectedResult).reason : '');
+    if (crmResult.status === 'fulfilled') {
+      const r = (crmResult as PromiseFulfilledResult<Response>).value;
+      console.log('[CRM_STATUS]', r.status, r.ok ? 'ok' : 'FAIL');
+      if (!r.ok) {
+        const body = await r.text().catch(() => '(unreadable)');
+        console.error('[CRM_ERROR_BODY]', body);
+      }
+    }
     console.log('[USER]', userResult.status, userResult.status === 'rejected' ? (userResult as PromiseRejectedResult).reason : '');
     console.log('[GAS]', gasResult.status, gasResult.status === 'fulfilled' && (gasResult as PromiseFulfilledResult<Response | null>).value ? `status:${((gasResult as PromiseFulfilledResult<Response>).value)?.status}` : (gasResult.status === 'rejected' ? (gasResult as PromiseRejectedResult).reason : ''));
     console.log('[DISPARO]', disparoResult.status);
+    if (disparoResult.status === 'fulfilled') {
+      const r = (disparoResult as PromiseFulfilledResult<Response>).value;
+      if (!r.ok) {
+        const body = await r.text().catch(() => '(unreadable)');
+        console.error('[DISPARO_ERROR_BODY]', body);
+      }
+    }
     console.log('[BOAS-VINDAS]', boasVindasResult.status);
 
-    // CRM insert falhou → erro crítico
+    // CRM insert falhou → log mas não bloqueia o lead
     if (crmResult.status === 'rejected') {
-      res.status(500).json({ error: 'Erro ao salvar no CRM' });
-      return;
-    }
-
-    const crmResponse = (crmResult as PromiseFulfilledResult<Response>).value;
-    if (!crmResponse.ok) {
-      console.error('CRM insert falhou com status:', crmResponse.status);
-      res.status(crmResponse.status).json({ error: 'Erro ao salvar no CRM' });
-      return;
+      console.error('[CRM] REJECTED — lead continua para loginUrl');
+    } else {
+      const crmResponse = (crmResult as PromiseFulfilledResult<Response>).value;
+      if (!crmResponse.ok) {
+        console.error('[CRM] INSERT falhou com status:', crmResponse.status, '— lead continua para loginUrl');
+      }
     }
 
     const loginUrl: string | null =
