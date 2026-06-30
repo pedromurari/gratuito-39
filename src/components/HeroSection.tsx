@@ -150,7 +150,7 @@ const HeroSection = () => {
           body: JSON.stringify({ nome: trimmedName, email: trimmedEmail, whatsapp: whatsappNumber, ...utms }),
         }).then(async (r) => ({ ok: r.ok, data: r.ok ? await r.json() : null })),
         new Promise<{ ok: false; data: null }>((resolve) =>
-          setTimeout(() => resolve({ ok: false, data: null }), 4500)
+          setTimeout(() => resolve({ ok: false, data: null }), 8000)
         ),
       ]);
       if (crmResult.ok && crmResult.data?.loginUrl) {

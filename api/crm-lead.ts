@@ -90,7 +90,7 @@ export default async function handler(req: any, res: any): Promise<void> {
             if (utm_term)     p.set('utm_term',     utm_term);
             return fetch(`${sheetsUrl}?${p.toString()}`, { method: 'GET' });
           })(),
-          4000,
+          2000,
           'gas'
         )
       : Promise.resolve(null);
