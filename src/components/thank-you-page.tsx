@@ -14,7 +14,7 @@ declare global {
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
-const WA_GROUP_URL   = 'https://chat.whatsapp.com/Fm7LJEUZy7w9RGu4gb0w51'
+const WA_GROUP_URL   = 'https://chat.whatsapp.com/HRzAlBObHpCChJ6b2fRIuu'
 const MEMBERS_URL    = 'https://www.idmpsi.com.br'
 
 const AULAS: Aula[] = [
