@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Obrigado from "./pages/Obrigado";
 import NotFound from "./pages/NotFound";
+import LiveRedirect from "./pages/LiveRedirect";
+
+const AULAS_YT_IDS = ['megMz1qsixU', 'm6xJ61n2qrY', '8iWUvtYkqpE'];
 
 const queryClient = new QueryClient();
 
@@ -19,6 +22,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/obrigado" element={<Obrigado />} />
           <Route path="/obrigadao" element={<Obrigado />} />
+          <Route path="/live01" element={<LiveRedirect videoId={AULAS_YT_IDS[0]} aula={1} />} />
+          <Route path="/live02" element={<LiveRedirect videoId={AULAS_YT_IDS[1]} aula={2} />} />
+          <Route path="/live03" element={<LiveRedirect videoId={AULAS_YT_IDS[2]} aula={3} />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
